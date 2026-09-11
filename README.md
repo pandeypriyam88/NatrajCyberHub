@@ -118,27 +118,52 @@ Tapping any service shortcut (Quick Service Finder or a service card) scrolls to
 
 ## 10. Deployment
 
-**Recommended: Vercel** (simplest for a Vite/React static site with GitHub integration, generous free tier, automatic HTTPS, and easy custom domains).
+**Recommended: GitHub Pages** — free, no extra account beyond GitHub, and this project already includes the setup for it.
 
-1. Push this project to a GitHub repository.
-2. Go to [vercel.com](https://vercel.com) → **New Project** → import the repository.
-3. Framework preset: **Vite**. Build command: `npm run build`. Output directory: `dist`.
-4. Deploy. Every future push to the main branch redeploys automatically.
+### One-time setup
 
-**Alternatives:** Netlify and Cloudflare Pages work the same way (connect the GitHub repo, build command `npm run build`, publish directory `dist`). GitHub Pages also works but needs a bit more manual configuration for SPA routing.
+1. Push this project to a GitHub repository (see steps below).
+2. In the repo, go to **Settings → Pages**.
+3. Under **Build and deployment → Source**, choose **GitHub Actions**.
 
-### Custom domain: natrajcyberhub.online
+That's it. The included workflow at `.github/workflows/deploy.yml` builds the site with `npm run build` and publishes the `dist/` folder automatically every time you push to `main`. You can also trigger it manually from the **Actions** tab.
 
-You've already purchased **natrajcyberhub.online**. Once the site is deployed on Vercel (or another host):
+### Pushing the code for the first time
 
-1. In the Vercel project → **Settings → Domains**, add `natrajcyberhub.online` (and optionally `www.natrajcyberhub.online`).
-2. Vercel will show you DNS records to add at your domain registrar (wherever you bought `natrajcyberhub.online`):
-   - Usually an **A record** for the root domain pointing to Vercel's IP, or
-   - A **CNAME record** for `www` pointing to `cname.vercel-dns.com`.
-3. Add those records in your registrar's DNS settings panel. This can take a few minutes to a few hours to propagate.
-4. Vercel automatically issues a free HTTPS certificate once DNS is verified.
+```bash
+git init
+git add .
+git commit -m "Initial commit: Natraj Cyber Hub website"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/NatrajCyberHub.git
+git push -u origin main
+```
 
-The site's `index.html` already points its canonical URL and Open Graph tags at `https://natrajcyberhub.online/`, so no code changes are needed once DNS is live — just make sure the domain is connected in your hosting dashboard.
+Once pushed, open the **Actions** tab on GitHub to watch the deploy run. When it finishes, your site is live at `https://YOUR_USERNAME.github.io/NatrajCyberHub/` (until the custom domain below is connected).
+
+### Connecting natrajcyberhub.online to GitHub Pages
+
+This project already includes a `public/CNAME` file containing `natrajcyberhub.online`, so GitHub Pages will pick it up automatically once you:
+
+1. At your domain registrar (wherever you bought `natrajcyberhub.online`), add these DNS records:
+   - **A records** for the root domain (`@`) pointing to GitHub Pages' IPs:
+     ```
+     185.199.108.153
+     185.199.109.153
+     185.199.110.153
+     185.199.111.153
+     ```
+   - Optionally, a **CNAME record** for `www` pointing to `YOUR_USERNAME.github.io`.
+2. Back in **Settings → Pages** on GitHub, enter `natrajcyberhub.online` under **Custom domain** and save.
+3. Wait for DNS to propagate (can take a few minutes to a few hours), then check **Enforce HTTPS** once GitHub shows the certificate is ready.
+
+### Alternatives (also free, no code changes needed)
+
+- **Netlify** — drag-and-drop the `dist/` folder after `npm run build`, or connect the GitHub repo for automatic deploys. Build command: `npm run build`, publish directory: `dist`.
+- **Cloudflare Pages** — same idea: connect the GitHub repo, build command `npm run build`, output directory `dist`.
+- **Vercel** — also works the same way if you'd prefer it later.
+
+All asset paths in this project are relative (`base: './'` in `vite.config.ts`), so the built site works correctly regardless of which host or path it's served from.
 
 ## 11. Future Improvements (not built into this MVP, but the code is structured to support them)
 
