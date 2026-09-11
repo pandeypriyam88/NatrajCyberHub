@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper text-ink-900 font-body antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display text-ink-900;
+  }
+
+  :focus-visible {
+    outline: 3px solid theme('colors.sun.500');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: theme('colors.sun.300');
+  }
+}
+
+@layer utilities {
+  .container-shop {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8;
+  }
+
+  .section-pad {
+    @apply py-14 sm:py-20;
+  }
+
+  /* Torn-ticket edge, used on stub-styled cards/dividers to echo the
+     shop's ticket-booking service without leaning on generic card chrome. */
+  .ticket-edge-bottom {
+    background-image: radial-gradient(circle at 10px 0, transparent 9px, currentColor 9.5px);
+    background-size: 20px 10px;
+    background-repeat: repeat-x;
+    background-position: bottom;
+    height: 10px;
+    color: theme('colors.paper');
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
