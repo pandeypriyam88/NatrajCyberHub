@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
+import Marquee from './components/Marquee'
 import QuickServiceFinder from './components/QuickServiceFinder'
 import Services from './components/Services'
 import ServiceRequestForm from './components/ServiceRequestForm'
@@ -25,6 +26,7 @@ function App() {
       <Navbar />
       <main>
         <Hero />
+        <Marquee />
         <QuickServiceFinder onSelectService={handleSelectService} />
         <Services onRaiseRequest={handleSelectService} />
         <ServiceRequestForm selectedService={selectedService} />

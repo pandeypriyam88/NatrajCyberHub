@@ -89,7 +89,7 @@ To get it:
 
 ## 9. How the WhatsApp Request Flow Works
 
-1. Customer fills in First Name, Last Name, Phone, optional Service, and Requirement in the **Raise a Request** form.
+1. Customer fills in First Name, Last Name, Phone, optional Service, Requirement, and optionally picks a 15-minute time slot (see below) in the **Raise a Request** form.
 2. On submit, `validateRequestForm()` (in `src/lib/validation.ts`) checks all required fields and that the phone number looks like a valid Indian mobile number.
 3. If valid, `generateWhatsAppMessage()` (in `src/lib/whatsapp.ts`) builds a formatted message, e.g.:
 
@@ -101,6 +101,7 @@ To get it:
    Name: Rahul Kumar
    Phone: 9876543210
    Service: Passport Application Assistance
+   Preferred slot: Tomorrow, 2:15 PM
 
    Requirement:
    I need help with passport application.
@@ -111,12 +112,36 @@ To get it:
    ```
 
 4. `openWhatsApp()` builds a `wa.me` link with the message URL-encoded and opens it in a new tab — this opens the WhatsApp app on mobile, or WhatsApp Web on desktop.
-5. The site then shows: **"Your request is ready to send on WhatsApp. Please tap Send to share it with Natraj Cyber Hub."** — it never claims the message was already delivered, since only WhatsApp itself can confirm that once the customer presses Send.
+5. The site then shows: **"Your request is ready to send on WhatsApp. Please tap Send to share it with Natraj Cyber Hub."** — it never claims the message was already delivered, since only WhatsApp itself can confirm that once the customer presses Send. Note: WhatsApp's click-to-chat link does not support sending automatically without the customer pressing Send — this is a WhatsApp platform restriction (anti-spam/anti-abuse), not a limitation of this site, and there's no legitimate way around it short of the paid WhatsApp Business API.
 6. If the browser blocks the popup, a fallback shows **Call Us** and **WhatsApp Us** buttons instead.
+7. In parallel, the same details (plus service price and any picked slot) are sent to a Google Sheet for your records — see section 12 below.
 
-Tapping any service shortcut (Quick Service Finder or a service card) scrolls to the request form and pre-selects that service in the dropdown — the customer can still change it.
+Tapping any service shortcut (Quick Service Finder, a service card, or a flagship service tile) scrolls to the request form and pre-selects that service in the dropdown — the customer can still change it.
 
-## 10. Deployment
+## 10. Time-Slot Booking
+
+Below the Service and Requirement fields, customers can optionally check "Prefer a specific time?" to reveal:
+
+- **Date chips** — Today plus the next few days (configurable via `bookingWindowDays` in `src/config/business.ts`, currently 4 days total).
+- **A grid of 15-minute time slots** — generated from `businessHours` in the same config file (currently 9:00 AM–9:00 PM, so 48 slots/day). If "Today" is selected, slots that have already passed are automatically hidden.
+
+This is a **request, not a guaranteed booking** — the site does not check whether a slot is already taken by someone else. It simply passes the requested date/time along in the WhatsApp message and the Sheet log, so you can confirm or reschedule directly with the customer. If you later want real availability checking (blocking already-booked slots), that would need the Apps Script to also read existing bookings back — let me know if you want that added.
+
+To change the slot length from 15 minutes, or the business hours, edit `businessHours` in `src/config/business.ts` and the slot-generation logic in `src/lib/slots.ts`.
+
+## 11. Pricing
+
+Displayed as "From ₹X" on service cards and in the flagship services strip. Configured in **`src/data/pricing.ts`** — one file, keyed by service ID. Every service currently shows "Contact for pricing" as a placeholder; update the relevant entries with real starting prices whenever you have them. No other file needs to change.
+
+## 12. Booking Records (Google Sheet)
+
+Every request submitted through the form — with or without a picked time slot — is also logged to a Google Sheet you control, via a free Google Apps Script "Web App". This gives you a running spreadsheet of customer name, phone, service, price, requested date/slot, and requirement.
+
+**Full setup walkthrough (about 5 minutes): see [`docs/google-sheets-setup.md`](./docs/google-sheets-setup.md).**
+
+Until you complete that setup, `bookingSheetWebhookUrl` in `src/config/business.ts` stays blank and logging is silently skipped — the WhatsApp flow works exactly the same either way; logging is a bonus, not a dependency.
+
+## 13. Deployment
 
 **Recommended: GitHub Pages** — free, no extra account beyond GitHub, and this project already includes the setup for it.
 
@@ -165,13 +190,13 @@ This project already includes a `public/CNAME` file containing `natrajcyberhub.o
 
 All asset paths in this project are relative (`base: './'` in `vite.config.ts`), so the built site works correctly regardless of which host or path it's served from.
 
-## 11. Future Improvements (not built into this MVP, but the code is structured to support them)
+## 14. Future Improvements (not built into this MVP, but the code is structured to support them)
 
 - Storing and tracking customer requests (order/status tracking) via a backend + database
 - Admin dashboard for managing requests
 - Document upload for applications
 - Online payments (Razorpay) — see note below
-- Appointment booking calendar
+- Real-time slot availability (blocking already-booked times, not just logging requests)
 - WhatsApp Business API for automated replies
 - Email notifications
 - Google Business Profile integration and customer reviews
@@ -185,6 +210,6 @@ No payment processing is implemented yet. When Razorpay (or similar) is added:
 - Verify payment signatures server-side.
 - Store payment status in a secure backend, not client-side state.
 
-## 12. Notes on Wording
+## 15. Notes on Wording
 
 Per the business's request, the site never claims to be an official government, railway, airline, bus, hotel, or CMC Vellore representative. Services are described as "Application Assistance," "Booking Assistance," or "Online Service Assistance" for this reason.
