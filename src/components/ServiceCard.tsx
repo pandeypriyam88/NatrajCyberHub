@@ -1,5 +1,6 @@
 import { MessageCircle } from 'lucide-react'
 import type { Service } from '../data/services'
+import { getServicePrice } from '../data/pricing'
 import { generateServiceEnquiryMessage, openWhatsApp } from '../lib/whatsapp'
 
 interface ServiceCardProps {
@@ -12,8 +13,13 @@ export default function ServiceCard({ service, onRaiseRequest }: ServiceCardProp
 
   return (
     <div className="flex flex-col rounded-xl2 border border-brand-100 bg-paper p-5 shadow-card transition-shadow hover:shadow-pop">
-      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-        <Icon size={22} aria-hidden="true" />
+      <div className="flex items-start justify-between">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+          <Icon size={22} aria-hidden="true" />
+        </div>
+        <span className="max-w-[7.5rem] rounded-lg bg-sun-100 px-2 py-1 text-right text-[11px] font-bold leading-tight text-sun-600">
+          From {getServicePrice(service.id)}
+        </span>
       </div>
 
       <h3 className="mt-3 text-[15px] font-semibold text-ink-900">{service.name}</h3>

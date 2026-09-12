@@ -7,6 +7,12 @@ export interface ServiceRequestInput {
   phone: string
   service: ServiceId | '' | string
   requirement: string
+  /** ISO date, e.g. 2026-09-12 — set only when the customer picked a time slot. */
+  date?: string
+  /** Friendly label, e.g. "2:15 PM" — set only when the customer picked a time slot. */
+  timeSlotLabel?: string
+  /** Friendly label for the date, e.g. "Today", "Tomorrow" — used in the WhatsApp message. */
+  dateLabel?: string
 }
 
 /**
@@ -35,6 +41,10 @@ export function generateWhatsAppMessage(input: ServiceRequestInput): string {
 
   if (serviceLabel) {
     lines.push(`Service: ${serviceLabel}`)
+  }
+
+  if (input.dateLabel && input.timeSlotLabel) {
+    lines.push(`Preferred slot: ${input.dateLabel}, ${input.timeSlotLabel}`)
   }
 
   lines.push('', 'Requirement:', requirement, '', 'Please contact me regarding this request.', '', 'Thank you.')

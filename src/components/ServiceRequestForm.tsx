@@ -1,8 +1,11 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { MessageCircle, Phone, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { MessageCircle, Phone, CheckCircle2, AlertTriangle, CalendarClock } from 'lucide-react'
 import { serviceDropdownOptions, type ServiceId } from '../data/services'
+import { getServicePrice } from '../data/pricing'
 import { validateRequestForm, type RequestFormErrors } from '../lib/validation'
 import { generateWhatsAppMessage, openWhatsApp } from '../lib/whatsapp'
+import { logBookingToSheet } from '../lib/sheetLogger'
+import { getBookingDateOptions, getAvailableSlots, formatSlotLabel } from '../lib/slots'
 import { businessConfig, telLink } from '../config/business'
 
 interface ServiceRequestFormProps {
@@ -20,10 +23,29 @@ export default function ServiceRequestForm({ selectedService }: ServiceRequestFo
   const [errors, setErrors] = useState<RequestFormErrors>({})
   const [status, setStatus] = useState<SubmitStatus>('idle')
 
+  const [wantsSlot, setWantsSlot] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<string>('')
+  const [selectedSlot, setSelectedSlot] = useState<string>('')
+
+  const dateOptions = useMemo(() => getBookingDateOptions(), [])
+  const availableSlots = useMemo(
+    () => (selectedDate ? getAvailableSlots(selectedDate) : []),
+    [selectedDate],
+  )
+
   // Preselect the service when the customer taps a shortcut elsewhere on the page.
   useEffect(() => {
     if (selectedService) setService(selectedService)
   }, [selectedService])
+
+  // Default to the first available date once the slot picker is opened.
+  useEffect(() => {
+    if (wantsSlot && !selectedDate && dateOptions.length > 0) {
+      setSelectedDate(dateOptions[0].value)
+    }
+  }, [wantsSlot, selectedDate, dateOptions])
+
+  const selectedDateLabel = dateOptions.find((d) => d.value === selectedDate)?.label
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -37,9 +59,23 @@ export default function ServiceRequestForm({ selectedService }: ServiceRequestFo
       return
     }
 
-    const message = generateWhatsAppMessage(values)
+    const timeSlotLabel = wantsSlot && selectedSlot ? formatSlotLabel(selectedSlot) : undefined
+    const messageInput = {
+      ...values,
+      date: wantsSlot ? selectedDate : undefined,
+      dateLabel: wantsSlot ? selectedDateLabel : undefined,
+      timeSlotLabel,
+    }
+
+    const message = generateWhatsAppMessage(messageInput)
     const opened = openWhatsApp(message)
     setStatus(opened ? 'ready' : 'blocked')
+
+    logBookingToSheet({
+      ...values,
+      date: wantsSlot ? selectedDateLabel : undefined,
+      timeSlotLabel,
+    })
   }
 
   return (
@@ -105,6 +141,11 @@ export default function ServiceRequestForm({ selectedService }: ServiceRequestFo
                     </option>
                   ))}
                 </select>
+                {service && (
+                  <p className="mt-1.5 text-xs font-semibold text-brand-600">
+                    From {getServicePrice(service)}
+                  </p>
+                )}
               </Field>
 
               <Field label="Requirement" htmlFor="requirement" error={errors.requirement}>
@@ -118,6 +159,83 @@ export default function ServiceRequestForm({ selectedService }: ServiceRequestFo
                   className={inputClasses(!!errors.requirement)}
                 />
               </Field>
+
+              {/* Optional time-slot booking */}
+              <div className="rounded-lg border border-dashed border-brand-300 bg-brand-50/50 p-4">
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-semibold text-ink-800">
+                  <input
+                    type="checkbox"
+                    checked={wantsSlot}
+                    onChange={(e) => setWantsSlot(e.target.checked)}
+                    className="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  <CalendarClock size={17} className="text-brand-600" aria-hidden="true" />
+                  Prefer a specific time? Pick a 15-minute slot (optional)
+                </label>
+
+                {wantsSlot && (
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-800/50">
+                        Date
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {dateOptions.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDate(opt.value)
+                              setSelectedSlot('')
+                            }}
+                            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                              selectedDate === opt.value
+                                ? 'border-brand-600 bg-brand-600 text-paper'
+                                : 'border-brand-200 bg-paper text-ink-800 hover:border-brand-400'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-800/50">
+                        Time
+                      </p>
+                      {availableSlots.length === 0 ? (
+                        <p className="text-sm text-ink-800/60">
+                          No more slots today — please pick another date.
+                        </p>
+                      ) : (
+                        <div className="grid max-h-48 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+                          {availableSlots.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setSelectedSlot(slot)}
+                              className={`rounded-lg border px-2 py-2 text-xs font-semibold transition-colors ${
+                                selectedSlot === slot
+                                  ? 'border-brand-600 bg-brand-600 text-paper'
+                                  : 'border-brand-200 bg-paper text-ink-800 hover:border-brand-400'
+                              }`}
+                            >
+                              {formatSlotLabel(slot)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedSlot && (
+                      <p className="text-sm font-medium text-brand-700">
+                        Selected: {selectedDateLabel}, {formatSlotLabel(selectedSlot)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -165,7 +283,17 @@ export default function ServiceRequestForm({ selectedService }: ServiceRequestFo
                   <button
                     type="button"
                     onClick={() => {
-                      const message = generateWhatsAppMessage({ firstName, lastName, phone, service, requirement })
+                      const timeSlotLabel = wantsSlot && selectedSlot ? formatSlotLabel(selectedSlot) : undefined
+                      const message = generateWhatsAppMessage({
+                        firstName,
+                        lastName,
+                        phone,
+                        service,
+                        requirement,
+                        date: wantsSlot ? selectedDate : undefined,
+                        dateLabel: wantsSlot ? selectedDateLabel : undefined,
+                        timeSlotLabel,
+                      })
                       const opened = openWhatsApp(message)
                       setStatus(opened ? 'ready' : 'blocked')
                     }}

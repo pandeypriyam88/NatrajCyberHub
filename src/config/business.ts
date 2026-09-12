@@ -32,6 +32,28 @@ export const businessConfig = {
 
   openingHours: 'Open Every Day, 9:00 AM – 9:00 PM',
 
+  /**
+   * Used to generate the 15-minute time-slot picker in the booking form.
+   * 9 to 21 means slots run 9:00 AM through 8:45 PM (last slot starts 8:45,
+   * matching the shop's 9 PM closing time).
+   */
+  businessHours: {
+    startHour: 9,
+    endHour: 21,
+  },
+
+  /** How many days ahead (including today) a customer can pick a slot for. */
+  bookingWindowDays: 4,
+
+  /**
+   * Google Apps Script Web App URL that logs each request/booking to a
+   * Google Sheet. Leave blank until you've set this up — see
+   * docs/google-sheets-setup.md for the full walkthrough and script code.
+   * While blank, bookings still work (WhatsApp flow is unaffected); they
+   * just won't be logged anywhere.
+   */
+  bookingSheetWebhookUrl: '',
+
   googleMapsLink: 'https://maps.app.goo.gl/y8m8bbAJHdJbZCEe6?g_st=ac',
 
   /**
